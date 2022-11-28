@@ -4,6 +4,7 @@ const mysql = require("mysql");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
+const { response } = require("express");
 const app = express();
 
 app.use(express.json());
@@ -44,9 +45,43 @@ app.post("/register", (req, res) => {
 
     })
 
-
-
 })
+
+//
+
+app.post("/login", (req, res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+
+    db.query(
+        "SELECT * FROM user WHERE username = ?;",
+        username,
+        (err, result) => {
+            if (err) {
+                res.send({ err: err });
+            }
+            console.log(result);
+            if (result.length > 0) {
+                bcrypt.compare(password, result[0].password, (error, response) => {
+                    if (response) {
+                        let token = jwt.sign(
+                            { userId: result[0].id, username: result[0].username },
+                            "secretkeyappearshere",
+                            { expiresIn: "1h" }
+                        )
+                        res.send(token);
+
+                    } else {
+                        res.send({ message: "kombinasi username/password salah!" });
+                    }
+                });
+            } else {
+                res.send({ message: "user tidak ditemukan" });
+            }
+        }
+    )
+
+});
 
 app.listen('3001', () => {
     console.log('Server running');
